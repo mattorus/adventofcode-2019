@@ -1,13 +1,11 @@
-﻿namespace AdventOfCode2019
+﻿namespace AdventOfCode2019.Day1
 {
     using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
-    using System.Runtime.CompilerServices;
-    using System.Text;
 
-    public static class Day1
+    public static class FuelCalculator
     {
         /// <summary>
         /// Gets the total fuel requirements of all of the given modules.

@@ -3,9 +3,8 @@
     using System;
     using System.Collections.Generic;
     using System.IO;
-    using System.Text;
 
-    using AdventOfCode2019;
+    using AdventOfCode2019.Day1;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 
     /// <summary>
@@ -22,7 +21,7 @@
         [TestMethod]
         public void Part1()
         {
-            Console.WriteLine($"Fuel Required: {Day1.GetFuelRequirements(new FileInfo(InputFile))}");
+            Console.WriteLine($"Fuel Required: {FuelCalculator.GetFuelRequirements(new FileInfo(InputFile))}");
         }
 
         /// <summary>
@@ -31,7 +30,7 @@
         [TestMethod]
         public void Part2()
         {
-            Console.WriteLine($"Fuel Required: {Day1.GetFuelRequirements(new FileInfo(InputFile), includeFuelMass: true)}");
+            Console.WriteLine($"Fuel Required: {FuelCalculator.GetFuelRequirements(new FileInfo(InputFile), includeFuelMass: true)}");
         }
     }
 }
