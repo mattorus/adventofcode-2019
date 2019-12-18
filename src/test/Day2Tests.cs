@@ -30,7 +30,7 @@
             var intcodeRunner = new IntcodeRunner(instructions);
             var runnerResults = intcodeRunner.Execute();
 
-            expectedOutput.Should().BeEquivalentTo(runnerResults);
+            runnerResults.Should().BeEquivalentTo(expectedOutput);
         }
 
         /// <summary>
@@ -45,11 +45,11 @@
                 .ToArray();
 
             // Restore gravity assist.
-            instructions[1] = 12;
-            instructions[2] = 2;
+            var noun = 12;
+            var verb = 2;
 
             var intcodeRunner = new IntcodeRunner(instructions);
-            var runnerResults = intcodeRunner.Execute();
+            var runnerResults = intcodeRunner.Execute(noun, verb);
             Console.WriteLine($"Position 0 Result: {runnerResults[0]}");
         }
 
