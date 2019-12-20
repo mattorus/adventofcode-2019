@@ -21,9 +21,9 @@
             End = 99,
         }
 
-        private readonly int[] instructions;
-        private readonly int[] userInput;
-        private int userInputPos;
+        private readonly int[] _instructions;
+        private readonly int[] _userInput;
+        private int _userInputPos;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IntcodeRunner"/> class.
@@ -32,9 +32,9 @@
         /// <param name="userInput">Test hook - simulates command line input.</param>
         public IntcodeRunner(int[] instructions, int[] userInput = null)
         {
-            this.instructions = instructions ?? throw new ArgumentNullException(nameof(instructions));
-            this.userInput = userInput ?? new int[] { 1 };
-            userInputPos = 0;
+            this._instructions = instructions ?? throw new ArgumentNullException(nameof(instructions));
+            this._userInput = userInput ?? new int[] { 1 };
+            _userInputPos = 0;
         }
 
         /// <summary>
@@ -43,7 +43,7 @@
         /// <returns>Intcode runner results.</returns>
         public int[] Execute()
         {
-            return this.Execute(this.instructions[1], this.instructions[2]);
+            return this.Execute(this._instructions[1], this._instructions[2]);
         }
 
         /// <summary>
@@ -54,38 +54,40 @@
         /// <returns>Intcode runner results.</returns>
         public int[] Execute(int noun, int verb)
         {
-            var output = (int[])this.instructions.Clone();
-            var outputIndex = -1;
-            output[1] = noun;
-            output[2] = verb;
+            var output = (int[])this._instructions.Clone();
+            int[] opcodeParams;
+            int index = 0, outputIndex = -1, outputIndexOffset = 0, numParams = 0;
 
-            int index = 0, numParams = 0;            
+            output[1] = noun;
+            output[2] = verb;                        
             var (opcode, operModes) = ParseOpcode(output[index]);
 
             while (opcode != Opcode.End)
             {
+                numParams = 2;
+                outputIndexOffset = 0;
+
                 switch (opcode)
-                {
+                {                    
                     case Opcode.Add:
                     case Opcode.Multiply:
                     case Opcode.LessThan:
                     case Opcode.Equals:
-                        numParams = 2;
-                        outputIndex = index + numParams + 1;
-                        break;
-                    case Opcode.JumpIfTrue:
-                    case Opcode.JumpIfFalse:
-                        numParams = 2;
-                        outputIndex = index + numParams;
+                        outputIndexOffset = 1;
                         break;
                     case Opcode.Read:
                     case Opcode.Print:
                         numParams = 1;
-                        outputIndex = index + numParams;
+                        break;
+                    case Opcode.JumpIfTrue:
+                    case Opcode.JumpIfFalse:
+                    default:
                         break;
                 }
 
-                int[] opcodeParams = new int[numParams];
+                outputIndex = index + numParams + outputIndexOffset;
+
+                opcodeParams = new int[numParams];
                 Array.Copy(output, index + 1, opcodeParams, 0, numParams);
 
                 if (!this.Execute(opcode, operModes, ref index, opcodeParams, output, output[outputIndex]))
@@ -136,7 +138,6 @@
                 operModes /= 10;
             }
 
-
             switch (opcode)
             {
                 case Opcode.Add:
@@ -148,12 +149,12 @@
                     break;
 
                 case Opcode.Read:
-                    if (userInput == null)
+                    if (_userInput == null)
                     {
                         throw new ArgumentOutOfRangeException(nameof(opcode), $"User input expected! -- {opcode}");
                     }
 
-                    instructions[outputIndex] = userInput[userInputPos++];
+                    instructions[outputIndex] = _userInput[_userInputPos++];
                     break;
 
                 case Opcode.Print:
