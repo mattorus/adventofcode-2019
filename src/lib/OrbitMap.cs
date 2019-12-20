@@ -22,6 +22,7 @@ namespace AdventOfCode2019
             _orbitCenters = new Dictionary<string, string>();
 
             BuildMap(File.ReadAllLines(path));
+            Validate();
         }
 
         /// <summary>
@@ -34,11 +35,7 @@ namespace AdventOfCode2019
             _orbitCenters = new Dictionary<string, string>();
 
             BuildMap(orbitStrings);
-
-            if(!_orbitCenters.ContainsKey(_centerOfMass))
-            {
-                throw new ArgumentException($"Invalid map! Must contain {_centerOfMass}");
-            }
+            Validate();            
         }
 
         /// <summary>
@@ -181,6 +178,17 @@ namespace AdventOfCode2019
             }
         }
         
+        /// <summary>
+        /// Ensures map contains a center of mass.
+        /// </summary>
+        private void Validate()
+        {
+            if (!_adjList.ContainsKey(_centerOfMass))
+            {
+                throw new ArgumentException($"Invalid map! Must contain {_centerOfMass}");
+            }
+        }
+
         /// <summary>
         /// Searches for the lowest common ancestor in the map.
         /// </summary>
