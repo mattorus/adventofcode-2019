@@ -104,7 +104,7 @@
         /// </summary>
         /// <param name="opcode"></param>
         /// <returns>
-        ///    opcode - the two right-most digits of parameter
+        ///    opcode  - the two right-most digits of parameter
         ///    opModes - the remaining digits of parameter
         /// </returns>
         private (Opcode opcode, int opermodes) ParseOpcode(int opcode)

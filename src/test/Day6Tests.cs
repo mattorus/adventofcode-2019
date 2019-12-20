@@ -18,12 +18,15 @@
         /// </summary>
         /// <param name="orbitStrings"></param>
         [DataTestMethod]
-        [DataRow(new string[] { "A)B", "B)C", "C)D", "A)E", "B)F" })]
+        [DataRow(new string[] { "COM)B", "A)B", "B)C", "C)D", "A)E", "B)F" })]
+        [DataRow(new string[] { "COM)B", "B)C", "C)D", "D)E", "E)F", "B)G", "G)H", "D)I", "E)J", "J)K", "K)L" })]
         public void TestBuildMap(string[] orbitStrings)
         {
             OrbitMap map = new OrbitMap(orbitStrings);
 
             map.PrintMap();
+            Console.WriteLine($"DirectOrbitCount: {map.DirectOrbitCount()}");
+            Console.WriteLine($"IndirectOrbitCount: {map.TotalOrbitCount()}");
         }
 
         /// <summary>
@@ -34,7 +37,7 @@
         {
             OrbitMap map = new OrbitMap(InputFile1);
 
-            map.PrintMap();
+            Console.WriteLine($"OrbitCount: {map.TotalOrbitCount()}");
         }
     }
 }
