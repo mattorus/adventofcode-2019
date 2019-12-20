@@ -39,9 +39,9 @@ namespace AdventOfCode2019
         }
 
         /// <summary>
-        /// 
+        /// Finds the total number of directo orbits in the map.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>Number of direct orbits.</returns>
         public int DirectOrbitCount()
         {
             int numOrbits = 0;
@@ -53,6 +53,46 @@ namespace AdventOfCode2019
 
             return numOrbits;
         }
+
+        /// <summary>
+        /// Finds the total number of orbits in the map.
+        /// </summary>
+        /// <returns>Count of total orbits.</returns>
+        public int TotalOrbitCount()
+        {
+            int numOrbits = 0;
+
+            foreach (string planet in _adjList.Keys)
+            {
+                numOrbits += OrbitCount(planet);
+            }
+
+            return numOrbits;
+        }
+
+        /// <summary>
+        /// Finds the total number of orbits for the given planet.
+        /// </summary>
+        /// <param name="planet"></param>
+        /// <returns>Count of total orbits.</returns>
+        private int OrbitCount(string planet)
+        {
+            // Perform DFS of adjList
+            int numOrbits = 0;
+
+            if (!_adjList.ContainsKey(planet))
+            {
+                return 0;
+            }
+
+            foreach (string orbit in _adjList[planet])
+            {
+                numOrbits += OrbitCount(orbit);
+            }
+
+            return numOrbits;
+        }
+
 
         /// <summary>
         /// Finds the subject planet of the given orbit.
@@ -108,53 +148,7 @@ namespace AdventOfCode2019
                 Console.WriteLine($"{kv.Key} : [ {str} ]");
             }
         }
-
-        /// <summary>
-        /// Finds the total number of orbits in the map.
-        /// </summary>
-        /// <returns>Count of total orbits.</returns>
-        public int TotalOrbitCount()
-        {
-            int numOrbits = 0;
-            
-            foreach (string planet in _adjList.Keys)
-            {
-                numOrbits += IndirectOrbitCount(planet, new HashSet<string>());               
-            }
-
-            return numOrbits;
-        }
-
-        /// <summary>
-        /// Finds the total number of orbits for the given planet.
-        /// </summary>
-        /// <param name="planet"></param>
-        /// <param name="visited"></param>
-        /// <returns>Count of total orbits.</returns>
-        private int IndirectOrbitCount(string planet, HashSet<string> visited)
-        {
-            // Perform DFS of adjList
-            int numOrbits = 0;
-
-            if (!_adjList.ContainsKey(planet))
-            {
-                return 0;
-            }
-
-            foreach (string orbit in _adjList[planet])
-            {
-                if (visited.Contains(orbit))
-                {
-                    continue;
-                }
-
-                visited.Add(orbit);
-                numOrbits += IndirectOrbitCount(orbit, new HashSet<string>(visited)) + 1;
-            }
-
-            return numOrbits;
-        }
-        
+                
         /// <summary>
         /// Populates Map's adjacency list.
         /// </summary>
