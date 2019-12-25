@@ -5,7 +5,7 @@
     using System.IO;
     using System.Linq;
 
-    using AdventOfCode2019.Day2;
+    using AdventOfCode2019;
     using FluentAssertions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
 

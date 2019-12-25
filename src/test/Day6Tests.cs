@@ -4,7 +4,7 @@
     using System.Collections.Generic;
     using System.Text;
 
-    using AdventOfCode2019.Day2;
+    using AdventOfCode2019;
     using FluentAssertions;
     using Microsoft.VisualStudio.TestTools.UnitTesting;
     [TestClass]

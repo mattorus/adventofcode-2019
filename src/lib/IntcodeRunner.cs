@@ -1,4 +1,4 @@
-﻿namespace AdventOfCode2019.Day2
+﻿namespace AdventOfCode2019
 {
     using System;
     using System.Collections.Generic;
@@ -7,6 +7,14 @@
 
     public class IntcodeRunner
     {
+        public enum Mode
+        {
+            normal = 0,
+            feedback = 1,
+        }
+
+        public Mode InputMode { get; set; }
+
         private enum Opcode
         {
             Unknown = 0,
@@ -21,9 +29,11 @@
             End = 99,
         }
 
-        private readonly int[] _instructions;
-        private readonly int[] _userInput;
+        private List<int> _outputBuffer;
+        private static int[] _instructions;
+        private int[] _userInput;
         private int _userInputPos;
+        private int _maxBuffer = 10;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IntcodeRunner"/> class.
@@ -32,8 +42,30 @@
         /// <param name="userInput">Test hook - simulates command line input.</param>
         public IntcodeRunner(int[] instructions, int[] userInput = null)
         {
-            this._instructions = instructions ?? throw new ArgumentNullException(nameof(instructions));
-            this._userInput = userInput ?? new int[] { 1 };
+            _instructions = instructions ?? throw new ArgumentNullException(nameof(instructions));
+            _userInput = userInput ?? new int[] { 1 };
+            _userInputPos = 0;
+            _outputBuffer = new List<int>() { 0 };
+            InputMode = Mode.normal;
+        }
+
+        /// <summary>
+        /// Updates stored instructions and input, if given, and resets user input pointer.
+        /// </summary>
+        /// <param name="instructions"></param>
+        /// <param name="userInput"></param>
+        public void UpdateAndReset(int[] instructions = null, int[] userInput = null)
+        {
+            if (instructions != null)
+            {
+                _instructions = instructions;
+            }
+            
+            if (userInput != null)
+            {
+                _userInput = userInput;
+            }
+
             _userInputPos = 0;
         }
 
@@ -43,7 +75,7 @@
         /// <returns>Intcode runner results.</returns>
         public int[] Execute()
         {
-            return this.Execute(this._instructions[1], this._instructions[2]);
+            return this.Execute(_instructions[1], _instructions[2]);
         }
 
         /// <summary>
@@ -54,7 +86,7 @@
         /// <returns>Intcode runner results.</returns>
         public int[] Execute(int noun, int verb)
         {
-            var output = (int[])this._instructions.Clone();
+            var output = (InputMode == Mode.feedback ? _instructions : (int[])_instructions.Clone());
             int[] opcodeParams;
             int index = 0, outputIndex = -1, outputIndexOffset = 0, numParams = 0;
 
@@ -101,6 +133,11 @@
             return output;
         }
 
+        public int GetLastOutput()
+        {
+            return _outputBuffer[^1];
+        }
+
         /// <summary>
         /// Parses the given opcode into instruction opcode and operand modes
         /// </summary>
@@ -141,11 +178,11 @@
             switch (opcode)
             {
                 case Opcode.Add:
-                    instructions[outputIndex] = opcodeParams.Aggregate(0, (x, y) => x + y);
+                    instructions[outputIndex] = opcodeParams.Aggregate((int) 0, (x, y) => x + y);
                     break;
 
                 case Opcode.Multiply:
-                    instructions[outputIndex] = opcodeParams.Aggregate(1, (x, y) => x * y);
+                    instructions[outputIndex] = opcodeParams.Aggregate((int) 1, (x, y) => x * y);
                     break;
 
                 case Opcode.Read:
@@ -154,17 +191,24 @@
                         throw new ArgumentOutOfRangeException(nameof(opcode), $"User input expected! -- {opcode}");
                     }
 
-                    instructions[outputIndex] = _userInput[_userInputPos++];
+                    if (_userInputPos >= _userInput.Length)
+                    {
+                        instructions[outputIndex] = _outputBuffer[^1];
+                    }
+                    else
+                    {
+                        instructions[outputIndex] = _userInput[_userInputPos++];
+                    }
                     break;
 
                 case Opcode.Print:
-                    Console.WriteLine(instructions[outputIndex]);
+                    Print(instructions[outputIndex]);
                     break;
 
                 case Opcode.JumpIfTrue:
                     if (opcodeParams[0] != 0)
                     {
-                        index = opcodeParams[^1];
+                        index = (int) opcodeParams[^1];
                         indexUpdated = true;
                     }
 
@@ -173,18 +217,18 @@
                 case Opcode.JumpIfFalse:
                     if (opcodeParams[0] == 0)
                     {
-                        index = opcodeParams[^1];
+                        index = (int) opcodeParams[^1];
                         indexUpdated = true;
                     }
 
                     break;
 
                 case Opcode.LessThan:
-                    instructions[outputIndex] = (opcodeParams[0] < opcodeParams[1] ? 1 : 0);                    
+                    instructions[outputIndex] = (int) (opcodeParams[0] < opcodeParams[1] ? 1 : 0);                    
                     break;
 
                 case Opcode.Equals:
-                    instructions[outputIndex] = (opcodeParams[0] == opcodeParams[1] ? 1 : 0);
+                    instructions[outputIndex] = (int) (opcodeParams[0] == opcodeParams[1] ? 1 : 0);
                     break;
 
                 default:
@@ -192,6 +236,18 @@
             }
 
             return indexUpdated;
+        }
+
+        private void Print(int value)
+        {
+            _outputBuffer.Add(value);
+
+            while (_outputBuffer.Count > _maxBuffer)
+            {
+                _outputBuffer.RemoveAt(0);
+            }
+
+            Console.WriteLine(value);
         }
     }
 }
