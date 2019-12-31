@@ -1,5 +1,4 @@
-﻿using AdventOfCode2019.Tools;
-using System;
+﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 using static AdventOfCode2019.IntcodeRunner;
@@ -9,71 +8,38 @@ namespace AdventOfCode2019
     public class Amplifier
     {
         public int PhaseSetting { get; private set; }
-        public int Input { get; private set; }
         public int ThrusterOutput { get; set; }
 
         private readonly IntcodeRunner _intcodeRunner;
 
-        public Amplifier(int phaseSetting, int ampInput, int[] instructions, Mode inputMode = Mode.normal)
+        public Amplifier(int phaseSetting, int[] instructions, Mode inputMode = Mode.normal)
         {
             this.PhaseSetting = phaseSetting;
-            this.Input = ampInput;
 
-            _intcodeRunner = new IntcodeRunner(instructions, new int[] { PhaseSetting, Input });
-            _intcodeRunner.InputMode = inputMode;
+            _intcodeRunner = new IntcodeRunner(instructions)
+            {
+                InputMode = inputMode
+            };
         }
 
-        public void UpdateAndReset(int phaseSetting, int ampInput, int[] instructions = null, int[] userInput = null)
+        public void UpdateAndReset(int phaseSetting, int ampInput, int[] instructions = null)
         {
             this.PhaseSetting = phaseSetting;
-            this.Input = ampInput;
 
-            _intcodeRunner.UpdateAndReset(instructions, new int[] { PhaseSetting, Input });
+            _intcodeRunner.UpdateAndReset(instructions, new int[] { PhaseSetting });
         }
 
-        public int GetMaxAmpChainOutput(int numAmps, Mode inputMode)
+        public void UpdateInput(int[] ampInput)
         {
-            int start = 0, end = 0, maxOutput = 0;
-
-            _intcodeRunner.InputMode = inputMode;
-
-            switch (inputMode)
+            foreach (int i in ampInput)
             {
-                case Mode.normal:
-                    start = 0;
-                    end = numAmps;
-                    break;
-                case Mode.feedback:
-                    start = numAmps;
-                    end = numAmps * 2;
-                    break;
-                default:
-                    break;
+                _intcodeRunner.InputQueue.Enqueue(i);
             }
-
-            var sequences = Generator.GeneratePhaseSequences(start, end);
-            
-            foreach (var sequence in sequences)
-            {
-                var output = this.ExecuteChainSequence(sequence.ToArray());
-                maxOutput = Math.Max(maxOutput, output);
-            }
-
-            return maxOutput;
         }
 
-        public int ExecuteChainSequence(int[] phaseSequence, int ampInput = 0)
+        public void UpdateInput(int ampInput)
         {
-            HashSet<int> phaseSetting = new HashSet<int>();
-
-            for (int i = 0; i < phaseSequence.Length; i++)
-            {
-                this.UpdateAndReset(phaseSequence[i], ampInput);
-
-                ampInput = this.Execute();
-            }
-
-            return ampInput;
+            _intcodeRunner.InputQueue.Enqueue(ampInput);
         }
 
         public int Execute()
@@ -82,6 +48,21 @@ namespace AdventOfCode2019
             ThrusterOutput = _intcodeRunner.GetLastOutput();
 
             return ThrusterOutput;
+        }
+
+        public void GetInputQueue(ref ConcurrentQueue<int> inputQueue)
+        {
+            inputQueue = _intcodeRunner.InputQueue;
+        }
+
+        public void RegisterOutputQueue(ref ConcurrentQueue<int> outputQueue)
+        {
+            _intcodeRunner.OutputQueue = outputQueue;
+        }
+
+        public List<int> GetOutputBuffer()
+        {
+            return _intcodeRunner.GetOutputBuffer();
         }
 
     }

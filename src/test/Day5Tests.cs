@@ -29,7 +29,14 @@
         [DataRow(new int[] { 1101, 100, -1, 4, 0 }, null, new int[] { 1101, 100, -1, 4, 99 })]
         public void Part1Tests(int[] instructions, int[] userInput, int[] expectedOutput)
         {
-            var intcodeRunner = new IntcodeRunner(instructions, userInput);
+            var intcodeRunner = new IntcodeRunner(instructions);
+            if (userInput != null)
+            {
+                foreach (var item in userInput)
+                {
+                    intcodeRunner.InputQueue.Enqueue(item);
+                }
+            }
 
             var runnerResults = intcodeRunner.Execute();
 
@@ -47,8 +54,10 @@
                 .Select(x => int.Parse(x))
                 .ToArray();
 
-            var intcodeRunner = new IntcodeRunner(instructions, new int[] { 1 });
+            var intcodeRunner = new IntcodeRunner(instructions);
+            intcodeRunner.InputQueue.Enqueue(1);
             var runnerResults = intcodeRunner.Execute();
+            intcodeRunner.GetLastOutput().Should().Be(6745903);
         }
 
         [DataTestMethod]
@@ -66,7 +75,11 @@
         [DataRow(new int[] { 3, 3, 1105, -1, 9, 1101, 0, 0, 12, 4, 12, 99, 1 }, new int[] { 5 }, new int[] { 3, 3, 1105, 5, 9, 1101, 0, 0, 12, 4, 12, 99, 1 })]
         public void Part2Tests(int[] instructions, int[] userInput, int[] expectedOutput)
         {
-            var intcodeRunner = new IntcodeRunner(instructions, userInput);
+            var intcodeRunner = new IntcodeRunner(instructions);
+            foreach (var item in userInput)
+            {
+                intcodeRunner.InputQueue.Enqueue(item);
+            }
 
             var runnerResults = intcodeRunner.Execute();
 
@@ -84,8 +97,10 @@
                 .Select(x => int.Parse(x))
                 .ToArray();
 
-            var intcodeRunner = new IntcodeRunner(instructions, new int[] { 5 });
+            var intcodeRunner = new IntcodeRunner(instructions);
+            intcodeRunner.InputQueue.Enqueue(5);
             var runnerResults = intcodeRunner.Execute();
+            intcodeRunner.GetLastOutput().Should().Be(9168267);
         }
     }
 }

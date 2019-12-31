@@ -2,8 +2,9 @@
 {
     using System;
     using System.Collections.Generic;
-    using System.IO;
+    using System.Threading;
     using System.Linq;
+    using System.Collections.Concurrent;
 
     public class IntcodeRunner
     {
@@ -12,8 +13,6 @@
             normal = 0,
             feedback = 1,
         }
-
-        public Mode InputMode { get; set; }
 
         private enum Opcode
         {
@@ -29,25 +28,39 @@
             End = 99,
         }
 
-        private List<int> _outputBuffer;
-        private static int[] _instructions;
-        private int[] _userInput;
-        private int _userInputPos;
-        private int _maxBuffer = 10;
+        private readonly List<int> _outputBuffer;
+        private int[] _instructions;
+        private int _maxBuffer = 50;
+
+        /// <summary>
+        /// InputMode
+        /// </summary>
+        public Mode InputMode { get; set; }
+
+        /// <summary>
+        /// Represents user input
+        /// </summary>
+        public ConcurrentQueue<int> InputQueue { get; set; }
+        
+        /// <summary>
+        /// Intcode output, for consumption during feedback mode
+        /// </summary>
+        public ConcurrentQueue<int> OutputQueue { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IntcodeRunner"/> class.
         /// </summary>
         /// <param name="instructions">Program instructions.</param>
         /// <param name="userInput">Test hook - simulates command line input.</param>
-        public IntcodeRunner(int[] instructions, int[] userInput = null)
+        public IntcodeRunner(int[] instructions)
         {
             _instructions = instructions ?? throw new ArgumentNullException(nameof(instructions));
-            _userInput = userInput ?? new int[] { 1 };
-            _userInputPos = 0;
-            _outputBuffer = new List<int>() { 0 };
+            InputQueue = new ConcurrentQueue<int>();
+            OutputQueue = null;
+            _outputBuffer = new List<int>();
             InputMode = Mode.normal;
         }
+
 
         /// <summary>
         /// Updates stored instructions and input, if given, and resets user input pointer.
@@ -63,10 +76,11 @@
             
             if (userInput != null)
             {
-                _userInput = userInput;
+                foreach (int i in userInput)
+                {
+                    InputQueue.Enqueue(i);
+                }
             }
-
-            _userInputPos = 0;
         }
 
         /// <summary>
@@ -93,6 +107,7 @@
             output[1] = noun;
             output[2] = verb;                        
             var (opcode, operModes) = ParseOpcode(output[index]);
+            //_outputBuffer.Clear();
 
             while (opcode != Opcode.End)
             {
@@ -133,9 +148,35 @@
             return output;
         }
 
+        /// <summary>
+        /// Returns the most recent output.
+        /// </summary>
+        /// <returns>int</returns>
         public int GetLastOutput()
         {
-            return _outputBuffer[^1];
+            _outputBuffer.TrimExcess();
+
+            if (OutputQueue != null && !OutputQueue.IsEmpty)
+            {
+                OutputQueue.TryPeek(out int result);
+
+                return result;
+            }
+            else
+            {
+                return _outputBuffer[^1];
+            }
+        }
+
+        /// <summary>
+        /// Returns output buffer.
+        /// </summary>
+        /// <returns>List</returns>
+        public List<int> GetOutputBuffer()
+        {
+            _outputBuffer.TrimExcess();
+
+            return _outputBuffer;
         }
 
         /// <summary>
@@ -186,19 +227,15 @@
                     break;
 
                 case Opcode.Read:
-                    if (_userInput == null)
+                    var input = 0;
+
+                    while (!InputQueue.TryDequeue(out input))
                     {
-                        throw new ArgumentOutOfRangeException(nameof(opcode), $"User input expected! -- {opcode}");
+                        Thread.Sleep(1); // TODO: TOFIX: Should utilize wait instead
                     }
 
-                    if (_userInputPos >= _userInput.Length)
-                    {
-                        instructions[outputIndex] = _outputBuffer[^1];
-                    }
-                    else
-                    {
-                        instructions[outputIndex] = _userInput[_userInputPos++];
-                    }
+                    instructions[outputIndex] = input;
+
                     break;
 
                 case Opcode.Print:
@@ -238,9 +275,18 @@
             return indexUpdated;
         }
 
+        /// <summary>
+        /// Handles the output functionality.
+        /// </summary>
+        /// <param name="value"></param>
         private void Print(int value)
         {
             _outputBuffer.Add(value);
+
+            if (InputMode == Mode.feedback)
+            {
+                OutputQueue.Enqueue(value);
+            }
 
             while (_outputBuffer.Count > _maxBuffer)
             {
