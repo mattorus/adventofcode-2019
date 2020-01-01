@@ -128,9 +128,10 @@ namespace AdventOfCode2019
                 
         private int ExecuteFeedbackCircuit()
         {
-            Amps[0].UpdateInput(0);
             // Create task array which runs execute on each amp
             Task<int>[] tasks = new Task<int>[Amps.Length];
+            
+            Amps[0].UpdateInput(0);
 
             for (int i = 0; i < tasks.Length; i++)
             {
@@ -138,12 +139,6 @@ namespace AdventOfCode2019
             }
 
             Task.WaitAll(tasks);
-            // Parallelize
-
-            //Parallel.For(0, Amps.Length, i =>
-            //{
-            //    Amps[i].Execute();
-            //});
 
             return tasks[^1].Result;
         }
