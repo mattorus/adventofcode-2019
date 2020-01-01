@@ -8,11 +8,11 @@ namespace AdventOfCode2019
     public class Amplifier
     {
         public int PhaseSetting { get; private set; }
-        public int ThrusterOutput { get; set; }
+        public long ThrusterOutput { get; set; }
 
         private readonly IntcodeRunner _intcodeRunner;
 
-        public Amplifier(int phaseSetting, int[] instructions, Mode inputMode = Mode.normal)
+        public Amplifier(int phaseSetting, long[] instructions, Mode inputMode = Mode.normal)
         {
             this.PhaseSetting = phaseSetting;
 
@@ -22,14 +22,14 @@ namespace AdventOfCode2019
             };
         }
 
-        public void UpdateAndReset(int phaseSetting, int ampInput, int[] instructions = null)
+        public void UpdateAndReset(int phaseSetting, int ampInput, long[] instructions = null)
         {
             this.PhaseSetting = phaseSetting;
 
-            _intcodeRunner.UpdateAndReset(instructions, new int[] { PhaseSetting });
+            _intcodeRunner.UpdateAndReset(instructions, new long[] { PhaseSetting });
         }
 
-        public void UpdateInput(int[] ampInput)
+        public void UpdateInput(long[] ampInput)
         {
             foreach (int i in ampInput)
             {
@@ -37,12 +37,12 @@ namespace AdventOfCode2019
             }
         }
 
-        public void UpdateInput(int ampInput)
+        public void UpdateInput(long ampInput)
         {
             _intcodeRunner.InputQueue.Enqueue(ampInput);
         }
 
-        public int Execute()
+        public long Execute()
         {
             _intcodeRunner.Execute();
             ThrusterOutput = _intcodeRunner.GetLastOutput();
@@ -50,17 +50,17 @@ namespace AdventOfCode2019
             return ThrusterOutput;
         }
 
-        public void GetInputQueue(ref ConcurrentQueue<int> inputQueue)
+        public void GetInputQueue(ref ConcurrentQueue<long> inputQueue)
         {
             inputQueue = _intcodeRunner.InputQueue;
         }
 
-        public void RegisterOutputQueue(ref ConcurrentQueue<int> outputQueue)
+        public void RegisterOutputQueue(ref ConcurrentQueue<long> outputQueue)
         {
             _intcodeRunner.OutputQueue = outputQueue;
         }
 
-        public List<int> GetOutputBuffer()
+        public List<long> GetOutputBuffer()
         {
             return _intcodeRunner.GetOutputBuffer();
         }
