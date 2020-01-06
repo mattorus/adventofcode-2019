@@ -12,7 +12,7 @@
     using static AdventOfCode2019.IntcodeRunner;
 
     [TestClass]
-    public class AmplifierTests
+    public class Day7Tests
     {
         private const string InputFile1 = @".\input\Day7.txt";
 
