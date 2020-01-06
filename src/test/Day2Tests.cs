@@ -21,11 +21,11 @@
         /// Day2 Part1 Input Tests
         /// </summary>
         [DataTestMethod]
-        [DataRow(new int[] { 1, 0, 0, 0, 99 }, new int[] { 2, 0, 0, 0, 99 })]
-        [DataRow(new int[] { 2, 3, 0, 3, 99 }, new int[] { 2, 3, 0, 6, 99 })]
-        [DataRow(new int[] { 2, 4, 4, 5, 99, 0 }, new int[] { 2, 4, 4, 5, 99, 9801 })]
-        [DataRow(new int[] { 1, 1, 1, 4, 99, 5, 6, 0, 99 }, new int[] { 30, 1, 1, 4, 2, 5, 6, 0, 99 })]
-        public void Part1Tests(int[] instructions, int[] expectedOutput)
+        [DataRow(new long[] { 1, 0, 0, 0, 99 }, new long[] { 2, 0, 0, 0, 99 })]
+        [DataRow(new long[] { 2, 3, 0, 3, 99 }, new long[] { 2, 3, 0, 6, 99 })]
+        [DataRow(new long[] { 2, 4, 4, 5, 99, 0 }, new long[] { 2, 4, 4, 5, 99, 9801 })]
+        [DataRow(new long[] { 1, 1, 1, 4, 99, 5, 6, 0, 99 }, new long[] { 30, 1, 1, 4, 2, 5, 6, 0, 99 })]
+        public void Part1Tests(long[] instructions, long[] expectedOutput)
         {
             var intcodeRunner = new IntcodeRunner(instructions);
             var runnerResults = intcodeRunner.Execute();
@@ -41,7 +41,7 @@
         {
             var instructions = File.ReadAllText(InputFile)
                 .Split(',')
-                .Select(x => int.Parse(x))
+                .Select(x => long.Parse(x))
                 .ToArray();
 
             // Restore gravity assist.
@@ -62,7 +62,7 @@
             const int outputToFind = 19690720;
             var instructions = File.ReadAllText(InputFile)
                 .Split(',')
-                .Select(x => int.Parse(x))
+                .Select(x => long.Parse(x))
                 .ToArray();
 
             var intcodeRunner = new IntcodeRunner(instructions);

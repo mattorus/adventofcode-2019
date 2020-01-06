@@ -11,11 +11,11 @@ namespace AdventOfCode2019
     {
         public Amplifier[] Amps { get; set; }
         public int[] PhaseSequence { get; set; }
-        public int[] Instructions { get; set; }
+        public long[] Instructions { get; set; }
         public Mode InputMode { get; set; }
 
 
-        public AmpCircuit(int[] phaseSequence, int[] instructions, Mode inputMode = Mode.normal)
+        public AmpCircuit(int[] phaseSequence, long[] instructions, Mode inputMode = Mode.normal)
         {
             if (phaseSequence == null || phaseSequence.Length < 1)
             {
@@ -34,7 +34,7 @@ namespace AdventOfCode2019
 
             for (int i = 0; i < PhaseSequence.Length; i++)
             {
-                Amps[i] = new Amplifier(PhaseSequence[i], (int[]) Instructions.Clone(), InputMode);
+                Amps[i] = new Amplifier(PhaseSequence[i], (long[]) Instructions.Clone(), InputMode);
                 Amps[i].UpdateInput(PhaseSequence[i]);
             }
 
@@ -49,7 +49,7 @@ namespace AdventOfCode2019
             for (int i = 0; i < Amps.Length; i++)
             {
                 var next = (i == Amps.Length - 1 ? 0 : i + 1);
-                ConcurrentQueue<int> nextInputQueue = null;
+                ConcurrentQueue<long> nextInputQueue = null;
 
                 Amps[next].GetInputQueue(ref nextInputQueue);
                 Amps[i].RegisterOutputQueue(ref nextInputQueue);
@@ -62,9 +62,10 @@ namespace AdventOfCode2019
             ResetAmps();
         }
 
-        public static int GetMaxAmpChainOutput(AmpCircuit ampCircuit)
+        public static long GetMaxAmpChainOutput(AmpCircuit ampCircuit)
         {
-            int start = 0, end = 0, maxOutput = 0;
+            int start = 0, end = 0;
+            long maxOutput = 0;
             var numAmps = ampCircuit.Amps.Length;
 
             switch (ampCircuit.InputMode)
@@ -93,9 +94,9 @@ namespace AdventOfCode2019
             return maxOutput;
         }
 
-        public int Execute()
+        public long Execute()
         {
-            int result = 0;
+            long result = 0;
 
             switch (InputMode)
             {
@@ -112,9 +113,9 @@ namespace AdventOfCode2019
             return result;
         }
 
-        private int ExecuteNormalCircuit()
+        private long ExecuteNormalCircuit()
         {
-            var ampOutput = 0;      
+            long ampOutput = 0;      
 
             for (int i = 0; i < Amps.Length; i++)
             {
@@ -126,16 +127,16 @@ namespace AdventOfCode2019
             return ampOutput;
         }
                 
-        private int ExecuteFeedbackCircuit()
+        private long ExecuteFeedbackCircuit()
         {
             // Create task array which runs execute on each amp
-            Task<int>[] tasks = new Task<int>[Amps.Length];
+            Task<long>[] tasks = new Task<long>[Amps.Length];
             
             Amps[0].UpdateInput(0);
 
             for (int i = 0; i < tasks.Length; i++)
             {
-                tasks[i] = Task<int>.Factory.StartNew(Amps[i].Execute);
+                tasks[i] = Task<long>.Factory.StartNew(Amps[i].Execute);
             }
 
             Task.WaitAll(tasks);

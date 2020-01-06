@@ -25,12 +25,16 @@
             JumpIfFalse = 6,
             LessThan = 7,
             Equals = 8,
+            RelativeBaseOffset = 9,
             End = 99,
         }
 
-        private readonly List<int> _outputBuffer;
-        private int[] _instructions;
+        private readonly List<long> _outputBuffer;
+        private long[] _instructions;
+        private static int _instructionSize = 30000;
+        private readonly int _originalSize;
         private int _maxBuffer = 50;
+        private long _relativeBase = 0;
 
         /// <summary>
         /// InputMode
@@ -40,34 +44,71 @@
         /// <summary>
         /// Represents user input
         /// </summary>
-        public ConcurrentQueue<int> InputQueue { get; set; }
+        public ConcurrentQueue<long> InputQueue { get; set; }
         
         /// <summary>
         /// Intcode output, for consumption during feedback mode
         /// </summary>
-        public ConcurrentQueue<int> OutputQueue { get; set; }
+        public ConcurrentQueue<long> OutputQueue { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="IntcodeRunner"/> class.
         /// </summary>
         /// <param name="instructions">Program instructions.</param>
         /// <param name="userInput">Test hook - simulates command line input.</param>
-        public IntcodeRunner(int[] instructions)
-        {
-            _instructions = instructions ?? throw new ArgumentNullException(nameof(instructions));
-            InputQueue = new ConcurrentQueue<int>();
+        public IntcodeRunner(long[] instructions)
+        {   
+            if (instructions == null)
+            {
+                throw new ArgumentNullException(nameof(instructions));
+            }
+
+            _originalSize = instructions.Length;
+            _instructions = new long[_instructionSize];
+            Array.Copy(instructions, 0, _instructions, 0, instructions.Length);
+            InputQueue = new ConcurrentQueue<long>();
             OutputQueue = null;
-            _outputBuffer = new List<int>();
+            _outputBuffer = new List<long>();
             InputMode = Mode.normal;
         }
+        
+        /// <summary>
+        /// Returns the most recent output.
+        /// </summary>
+        /// <returns>int</returns>
+        public long GetLastOutput()
+        {
+            _outputBuffer.TrimExcess();
 
+            if (OutputQueue != null && !OutputQueue.IsEmpty)
+            {
+                OutputQueue.TryPeek(out long result);
+
+                return result;
+            }
+            else
+            {
+                return _outputBuffer[^1];
+            }
+        }
+
+        /// <summary>
+        /// Returns output buffer.
+        /// </summary>
+        /// <returns>List</returns>
+        public List<long> GetOutputBuffer()
+        {
+            _outputBuffer.TrimExcess();
+
+            return _outputBuffer;
+        }
 
         /// <summary>
         /// Updates stored instructions and input, if given, and resets user input pointer.
         /// </summary>
         /// <param name="instructions"></param>
         /// <param name="userInput"></param>
-        public void UpdateAndReset(int[] instructions = null, int[] userInput = null)
+        public void UpdateAndReset(long[] instructions = null, long[] userInput = null)
         {
             if (instructions != null)
             {
@@ -87,7 +128,7 @@
         /// Executes the opcodes and returns the results.
         /// </summary>
         /// <returns>Intcode runner results.</returns>
-        public int[] Execute()
+        public long[] Execute()
         {
             return this.Execute(_instructions[1], _instructions[2]);
         }
@@ -98,10 +139,10 @@
         /// <param name="noun">Noun value.</param>
         /// <param name="verb">Verb value.</param>
         /// <returns>Intcode runner results.</returns>
-        public int[] Execute(int noun, int verb)
+        public long[] Execute(long noun, long verb)
         {
-            var output = (InputMode == Mode.feedback ? _instructions : (int[])_instructions.Clone());
-            int[] opcodeParams;
+            var output = (InputMode == Mode.feedback ? _instructions : (long[])_instructions.Clone());
+            long[] opcodeParams;
             int index = 0, outputIndex = -1, outputIndexOffset = 0, numParams = 0;
 
             output[1] = noun;
@@ -124,6 +165,7 @@
                         break;
                     case Opcode.Read:
                     case Opcode.Print:
+                    case Opcode.RelativeBaseOffset:
                         numParams = 1;
                         break;
                     case Opcode.JumpIfTrue:
@@ -134,7 +176,7 @@
 
                 outputIndex = index + numParams + outputIndexOffset;
 
-                opcodeParams = new int[numParams];
+                opcodeParams = new long[numParams];
                 Array.Copy(output, index + 1, opcodeParams, 0, numParams);
 
                 if (!this.Execute(opcode, operModes, ref index, opcodeParams, output, output[outputIndex]))
@@ -145,38 +187,10 @@
                 (opcode, operModes) = ParseOpcode(output[index]);
             }
 
-            return output;
-        }
+            long[] outputTrimmed = new long[_originalSize];
+            Array.Copy(output, 0, outputTrimmed, 0, _originalSize);
 
-        /// <summary>
-        /// Returns the most recent output.
-        /// </summary>
-        /// <returns>int</returns>
-        public int GetLastOutput()
-        {
-            _outputBuffer.TrimExcess();
-
-            if (OutputQueue != null && !OutputQueue.IsEmpty)
-            {
-                OutputQueue.TryPeek(out int result);
-
-                return result;
-            }
-            else
-            {
-                return _outputBuffer[^1];
-            }
-        }
-
-        /// <summary>
-        /// Returns output buffer.
-        /// </summary>
-        /// <returns>List</returns>
-        public List<int> GetOutputBuffer()
-        {
-            _outputBuffer.TrimExcess();
-
-            return _outputBuffer;
+            return outputTrimmed;
         }
 
         /// <summary>
@@ -187,7 +201,7 @@
         ///    opcode  - the two right-most digits of parameter
         ///    opModes - the remaining digits of parameter
         /// </returns>
-        private (Opcode opcode, int opermodes) ParseOpcode(int opcode)
+        private (Opcode opcode, long opermodes) ParseOpcode(long opcode)
         {
             return ((Opcode)(opcode % 100), opcode / 100);
         }
@@ -201,33 +215,51 @@
         /// <param name="numParams"></param>
         /// <param name="instructions"></param>
         /// <returns>True if instruction pointer was updated, false otherwise</returns>
-        private bool Execute(Opcode opcode, int operModes, ref int index, int[] opcodeParams, int[] instructions, int outputIndex)
+        private bool Execute(Opcode opcode, long operModes, ref int index, long[] opcodeParams, long[] instructions, long outputIndex)
         {
             bool indexUpdated = false;
             int i = 0;
 
             for (i = 0; i < opcodeParams.Length; i++)
             {
-                if (operModes % 10 == 0)
+                switch (operModes % 10)
                 {
-                    opcodeParams[i] = instructions[opcodeParams[i]];
+                    case 0:
+                        opcodeParams[i] = instructions[opcodeParams[i]];
+                        break;
+                    case 2:
+                        opcodeParams[i] = instructions[opcodeParams[i] + _relativeBase];
+                        break;
+                    default:
+                        break;
+                }
+
+                // Special case: Read in relative mode, breaking here, before updating operModes, allows outputIndex to be updated
+                if (opcode == Opcode.Read)
+                {
+                    break;
                 }
 
                 operModes /= 10;
             }
 
+            if (operModes == 2)
+            {
+                outputIndex += _relativeBase;
+            }
+
             switch (opcode)
             {
                 case Opcode.Add:
-                    instructions[outputIndex] = opcodeParams.Aggregate((int) 0, (x, y) => x + y);
+                    instructions[outputIndex] = opcodeParams.Aggregate((long) 0, (x, y) => x + y);
                     break;
 
                 case Opcode.Multiply:
-                    instructions[outputIndex] = opcodeParams.Aggregate((int) 1, (x, y) => x * y);
+                    instructions[outputIndex] = opcodeParams.Aggregate((long) 1, (x, y) => x * y);
                     break;
 
                 case Opcode.Read:
-                    var input = 0;
+                    long input = 0;
 
                     while (!InputQueue.TryDequeue(out input))
                     {
@@ -239,7 +271,7 @@
                     break;
 
                 case Opcode.Print:
-                    Print(instructions[outputIndex]);
+                    Print(opcodeParams[0]);
                     break;
 
                 case Opcode.JumpIfTrue:
@@ -268,6 +300,10 @@
                     instructions[outputIndex] = (int) (opcodeParams[0] == opcodeParams[1] ? 1 : 0);
                     break;
 
+                case Opcode.RelativeBaseOffset:
+                    _relativeBase += opcodeParams[0];
+                    break;
+
                 default:
                     throw new ArgumentOutOfRangeException(nameof(opcode), $"Invalid opcode specified! -- {opcode}");
             }
@@ -279,7 +315,7 @@
         /// Handles the output functionality.
         /// </summary>
         /// <param name="value"></param>
-        private void Print(int value)
+        private void Print(long value)
         {
             _outputBuffer.Add(value);
 
