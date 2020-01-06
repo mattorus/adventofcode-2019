@@ -31,6 +31,8 @@
 
         private readonly List<long> _outputBuffer;
         private long[] _instructions;
+        private static int _instructionSize = 30000;
+        private readonly int _originalSize;
         private int _maxBuffer = 50;
         private long _relativeBase = 0;
 
@@ -55,8 +57,15 @@
         /// <param name="instructions">Program instructions.</param>
         /// <param name="userInput">Test hook - simulates command line input.</param>
         public IntcodeRunner(long[] instructions)
-        {
-            _instructions = instructions ?? throw new ArgumentNullException(nameof(instructions));
+        {   
+            if (instructions == null)
+            {
+                throw new ArgumentNullException(nameof(instructions));
+            }
+
+            _originalSize = instructions.Length;
+            _instructions = new long[_instructionSize];
+            Array.Copy(instructions, 0, _instructions, 0, instructions.Length);
             InputQueue = new ConcurrentQueue<long>();
             OutputQueue = null;
             _outputBuffer = new List<long>();
@@ -178,7 +187,10 @@
                 (opcode, operModes) = ParseOpcode(output[index]);
             }
 
-            return output;
+            long[] outputTrimmed = new long[_originalSize];
+            Array.Copy(output, 0, outputTrimmed, 0, _originalSize);
+
+            return outputTrimmed;
         }
 
         /// <summary>
@@ -222,7 +234,18 @@
                         break;
                 }
 
+                // Needed for special case of Read in relative mode
+                if (opcode == Opcode.Read)
+                {
+                    break;
+                }
+
                 operModes /= 10;
+            }
+
+            if (operModes == 2)
+            {
+                outputIndex += _relativeBase;
             }
 
             switch (opcode)
@@ -248,7 +271,7 @@
                     break;
 
                 case Opcode.Print:
-                    Print(instructions[outputIndex]);
+                    Print(opcodeParams[0]);
                     break;
 
                 case Opcode.JumpIfTrue:
