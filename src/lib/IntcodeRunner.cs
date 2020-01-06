@@ -234,7 +234,7 @@
                         break;
                 }
 
-                // Needed for special case of Read in relative mode
+                // Special case: Read in relative mode, breaking here, before updating operModes, allows outputIndex to be updated
                 if (opcode == Opcode.Read)
                 {
                     break;

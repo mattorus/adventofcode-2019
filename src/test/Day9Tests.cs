@@ -49,5 +49,19 @@
 
             var runnerResults = intcodeRunner.Execute();
         }
+
+        [TestMethod]
+        public void Part2Tests_File()
+        {
+            var instructions = File.ReadAllText(InputFile1)
+                .Split(",")
+                .Select(x => long.Parse(x))
+                .ToArray();
+            var intcodeRunner = new IntcodeRunner(instructions);
+
+            intcodeRunner.InputQueue.Enqueue(2);
+
+            var runnerResults = intcodeRunner.Execute();
+        }
     }
 }
